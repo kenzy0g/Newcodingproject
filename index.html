@@ -12,6 +12,15 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%; background:linear-gradient(180deg,#071026 0%, #071021 40%); color:#e6eef6; margin:0}
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 16px 28px;
+    background-color: var(--bg);
+    border-bottom: 1px solid rgba(225, 255,255,0.05); 
+  }
+  .site-logo {height: 40px; width: auto;}
   .wrap{min-height:100%; display:flex; align-items:center; justify-content:center; padding:28px}
   .card{width:100%; max-width:920px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:22px; box-shadow: 0 6px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03); display:grid; grid-template-columns: 1fr 360px; gap:20px}
   @media (max-width:880px){ .card { grid-template-columns: 1fr; } .right { order: 2 } }
@@ -54,6 +63,9 @@
 </style>
 </head>
 <body>
+   <header class="site-header">
+        <img src="monad-logo.png" alt="logo" class="site-logo">
+    </header>
 <div class="wrap">
   <div class="card">
     <div>
@@ -137,7 +149,7 @@ function typeWriter(str, dom, ms=20){
   step();
 }
 
-function simulateNetworkDelay(min=600,max=1400){
+function simulateNetworkDelay(min=1100,max=1700){
   return new Promise(r=>setTimeout(r, min + Math.random()*(max-min)));
 }
 
@@ -150,7 +162,7 @@ async function runChecks(wallet){
   logEl.innerHTML = '';
   setProgress(3);
   appendLine({dot:'wait', text:'Preparing checks...', typing:true});
-  await simulateNetworkDelay(200,400);
+  await simulateNetworkDelay(900,1400);
 
   const steps = [
     'Checking transactions...',
@@ -163,12 +175,12 @@ async function runChecks(wallet){
     appendLine({dot:'wait', text:steps[i], typing:true});
     const l = appendLine({dot:'wait', text:'—'});
     setProgress(20 + i*20);
-    await simulateNetworkDelay(500,1200);
+    await simulateNetworkDelay(1400,1900);
     l.querySelector('.dot').className = 'dot ok';
     l.querySelector('div:last-child').textContent = steps[i].replace('Checking','') + ': Confirmed ✅';
   }
 
-  await simulateNetworkDelay(250,750);
+  await simulateNetworkDelay(800,1400);
   appendLine({dot:'ok', text:'All checks completed ✅'});
   setProgress(100);
 
@@ -220,4 +232,5 @@ resetBtn.addEventListener('click', ()=>{
 });
 </script>
 </body>
+
 </html>
