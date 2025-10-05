@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Airdrop Quick-Checker</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --accent:#7c3aed; --muted:#9aa4b2; --success:#10b981;
+    --glass: rgba(255,255,255,0.03);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; background:linear-gradient(180deg,#071026 0%, #071021 40%); color:#e6eef6; margin:0}
+  .wrap{min-height:100%; display:flex; align-items:center; justify-content:center; padding:28px}
+  .card{width:100%; max-width:920px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:22px; box-shadow: 0 6px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03); display:grid; grid-template-columns: 1fr 360px; gap:20px}
+  @media (max-width:880px){ .card { grid-template-columns: 1fr; } .right { order: 2 } }
+  h1{font-size:20px; margin:0 0 8px 0; letter-spacing: -0.2px}
+  p.lead{margin:0 0 16px 0; color:var(--muted)}
+  .inputRow{display:flex; gap:10px; margin-bottom:14px}
+  input[type="text"]{flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:var(--glass); color:inherit; outline:none; font-size:15px}
+  button.btn{padding:10px 14px; border-radius:10px; border:0; background:linear-gradient(90deg,var(--accent), #5b21b6); color:white; cursor:pointer; font-weight:600}
+  button.btn:disabled{opacity:0.5; cursor:not-allowed}
+  .log{background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); padding:12px; border-radius:10px; min-height:220px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; color:#cfe8ff; overflow:auto; border:1px solid rgba(255,255,255,0.02)}
+  .line{margin:6px 0; display:flex; gap:8px; align-items:center}
+  .dot{width:10px; height:10px; border-radius:50%}
+  .dot.wait{background: #f59e0b; box-shadow:0 0 8px rgba(245,158,11,0.2)}
+  .dot.ok{background: var(--success); box-shadow:0 0 12px rgba(16,185,129,0.18)}
+  .dot.fail{background:#ef4444; box-shadow:0 0 12px rgba(239,68,68,0.14)}
+  .muted{color:var(--muted); font-size:13px}
+  .progressWrap{margin-top:10px}
+  .progress{height:10px; width:100%; background: rgba(255,255,255,0.03); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.02)}
+  .progressBar{height:100%; width:0%; background:linear-gradient(90deg, #60a5fa, #7c3aed); transition:width 600ms linear}
+  .right{display:flex; flex-direction:column; gap:14px; align-items:stretch}
+  .resultCard{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); padding:14px; border-radius:10px; min-height:140px; display:flex; flex-direction:column; gap:10px; border:1px solid rgba(255,255,255,0.02)}
+  .verdict{font-size:18px; font-weight:700}
+  .bigAlloc{font-size:28px; font-weight:800; color:var(--accent)}
+  .sticker{height:180px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px dashed rgba(255,255,255,0.03); opacity:0; transition:opacity .4s ease}
+  .copyBtn{padding:8px 10px; border-radius:8px; border:0; background: rgba(255,255,255,0.03); color:inherit; cursor:pointer}
+  .typing{display:inline-block; white-space:pre}
+  .fade-in{animation:fadeIn .45s ease both}
+  .flashRed{animation:flashRed 1s ease;}
+  .shake{animation:shake 0.4s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @keyframes flashRed{
+    0%,100%{color:#ef4444;}
+    50%{color:#ffb4b4;}
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div>
+      <h1>Airdrop Allocation-Checker</h1>
+      <p class="lead">Paste your wallet address below and wait for verifications to complete to see your airdrop allocation.
+        N*B: THIS IS NOT THE OFFICIAL MONAD AIRDROP CHECKER</p>
+
+      <div class="inputRow">
+        <input id="wallet" type="text" placeholder="Paste wallet address..." />
+        <button id="checkBtn" class="btn">Check</button>
+      </div>
+
+      <div class="log" id="log"><div class="line muted">Ready. Paste a wallet and click <strong>Check</strong>.</div></div>
+
+      <div class="progressWrap">
+        <div class="progress"><div class="progressBar" id="progressBar"></div></div>
+      </div>
+
+      <button id="checkAllocBtn" class="btn" style="display:none; margin-top:10px;">Check Allocation</button>
+      <button id="resetBtn" class="copyBtn" disabled>Reset</button>
+    </div>
+
+    <aside class="right">
+      <div class="resultCard">
+        <div class="verdict" id="verdict">No result yet</div>
+        <div class="bigAlloc" id="alloc">—</div>
+      </div>
+
+     <div class="sticker" id="sticker" aria-hidden="true" style="justify-content: center; align-items: center;">
+      <img src="KEK.GIF"  width="123" height="128" style="border-radius: 8px; opacity: 1;">
+     </div> 
+
+     <footer style="margin-top: 4opx; text-align: center; font-size: 13px; color: #9aa4b2;">@2025 built by <a href="https://x.com/justkenzy0?s=21" style="color: #7c3aed; text-decoration: none;">justkenzy0</a> <br>
+    CO's: <a href="https://x.com/okiszmortan?s=21"style="color: #7c3aed; text-decoration: none;">Mortan</a> . <a href="https://x.com/icyfred01?s=21" style="color: #7c3aed; text-decoration: none;">Icyfred</a> 
+    </footer>
+    </aside>
+  </div>
+</div>
+
+<script>
+const walletInput = document.getElementById('wallet');
+const checkBtn = document.getElementById('checkBtn');
+const resetBtn = document.getElementById('resetBtn');
+const checkAllocBtn = document.getElementById('checkAllocBtn');
+const logEl = document.getElementById('log');
+const progressBar = document.getElementById('progressBar');
+const verdict = document.getElementById('verdict');
+const alloc = document.getElementById('alloc');
+const sticker = document.getElementById('sticker');
+
+let isRunning = false;
+
+function isValidEVM(address) {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+function appendLine({dot='wait', text='', typing=false}) {
+  const el = document.createElement('div');
+  el.className = 'line fade-in';
+  const d = document.createElement('span');
+  d.className = 'dot ' + dot;
+  el.appendChild(d);
+  const t = document.createElement('div');
+  t.className = typing ? 'typing' : '';
+  t.textContent = typing ? '' : text;
+  el.appendChild(t);
+  logEl.appendChild(el);
+  logEl.scrollTop = logEl.scrollHeight;
+  if (typing) typeWriter(text, t, 20);
+  return el;
+}
+
+function typeWriter(str, dom, ms=20){
+  let i=0;
+  function step(){
+    dom.textContent = str.slice(0,i);
+    logEl.scrollTop = logEl.scrollHeight;
+    i++;
+    if(i<=str.length) setTimeout(step, ms + Math.random()*10);
+  }
+  step();
+}
+
+function simulateNetworkDelay(min=600,max=1400){
+  return new Promise(r=>setTimeout(r, min + Math.random()*(max-min)));
+}
+
+function setProgress(p){
+  progressBar.style.width = Math.min(100, Math.max(0,p)) + '%';
+}
+
+async function runChecks(wallet){
+  isRunning = true;
+  logEl.innerHTML = '';
+  setProgress(3);
+  appendLine({dot:'wait', text:'Preparing checks...', typing:true});
+  await simulateNetworkDelay(200,400);
+
+  const steps = [
+    'Checking transactions...',
+    'Checking volume...',
+    'Checking NFTs...',
+    'Checking activity...'
+  ];
+
+  for (let i=0;i<steps.length;i++){
+    appendLine({dot:'wait', text:steps[i], typing:true});
+    const l = appendLine({dot:'wait', text:'—'});
+    setProgress(20 + i*20);
+    await simulateNetworkDelay(500,1200);
+    l.querySelector('.dot').className = 'dot ok';
+    l.querySelector('div:last-child').textContent = steps[i].replace('Checking','') + ': Confirmed ✅';
+  }
+
+  await simulateNetworkDelay(250,750);
+  appendLine({dot:'ok', text:'All checks completed ✅'});
+  setProgress(100);
+
+  checkAllocBtn.style.display = 'block';
+  resetBtn.disabled = false;
+  isRunning = false;
+}
+
+checkBtn.addEventListener('click', async ()=>{
+  if(isRunning) return;
+  const wallet = walletInput.value.trim();
+
+  if(wallet === ''){
+    const el = appendLine({dot:'fail', text:'Please enter a wallet address'});
+    el.classList.add('flashRed', 'shake');
+    return;
+  }
+
+  if(!isValidEVM(wallet)){
+    const el = appendLine({dot:'fail', text:'Invalid wallet address ❌'});
+    el.classList.add('flashRed', 'shake');
+    return;
+  }
+
+  checkBtn.disabled = true;
+  walletInput.disabled = true;
+  await runChecks(wallet);
+  checkBtn.disabled = false;
+  walletInput.disabled = false;
+});
+
+checkAllocBtn.addEventListener('click', ()=>{
+  verdict.textContent = '🎉 THANKS FOR PLAYING';
+  alloc.textContent = 0;
+  sticker.style.opacity = '1';
+  sticker.setAttribute('aria-hidden','false');
+  checkAllocBtn.style.display = 'none';
+});
+
+resetBtn.addEventListener('click', ()=>{
+  logEl.innerHTML = '<div class="line muted">Ready. Paste a wallet and click <strong>Check</strong>.</div>';
+  setProgress(0);
+  verdict.textContent = 'No result yet';
+  alloc.textContent = '—';
+  sticker.style.opacity = '0';
+  sticker.setAttribute('aria-hidden','true');
+  checkAllocBtn.style.display = 'none';
+  resetBtn.disabled = true;
+});
+</script>
+</body>
+</html>
